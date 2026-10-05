@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1120" />
+    <title>Personal OS</title>
+    <script>
+      // Applied before first paint so dark-mode users never see a light flash.
+      // The app re-applies the theme on mount; this only wins the initial frame.
+      (function () {
+        try {
+          var raw = window.localStorage.getItem('personal-os-v1')
+          var parsed = raw ? JSON.parse(raw) : null
+          var settings = parsed && parsed.state && parsed.state.settings
+          var theme = (settings && settings.theme) || 'system'
+          var prefersDark =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          var dark = theme === 'dark' || (theme === 'system' && prefersDark)
+          var root = document.documentElement
+          if (dark) root.classList.add('dark')
+          else root.classList.remove('dark')
+          root.style.colorScheme = dark ? 'dark' : 'light'
+        } catch (error) {
+          /* Corrupt or unavailable storage: fall back to the light default. */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
