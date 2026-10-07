@@ -5,6 +5,8 @@ import { AppShell } from '@/components/layout/AppShell'
 const Dashboard = lazy(() => import('@/pages/Dashboard'))
 const Tasks = lazy(() => import('@/pages/Tasks'))
 const Habits = lazy(() => import('@/pages/Habits'))
+const Fitness = lazy(() => import('@/pages/Fitness'))
+const Notes = lazy(() => import('@/pages/Notes'))
 const Goals = lazy(() => import('@/pages/Goals'))
 const Projects = lazy(() => import('@/pages/Projects'))
 const Study = lazy(() => import('@/pages/Study'))
@@ -37,6 +39,8 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="habits" element={<Habits />} />
+          <Route path="fitness" element={<Fitness />} />
+          <Route path="notes" element={<Notes />} />
           <Route path="goals" element={<Goals />} />
           <Route path="projects" element={<Projects />} />
           <Route path="learning" element={<Courses />} />

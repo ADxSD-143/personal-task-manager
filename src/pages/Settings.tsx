@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
-import { useCloudSync } from '@/components/auth/CloudSyncProvider'
+import { useOptionalCloudSync } from '@/components/auth/CloudSyncProvider'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Field, TextInput } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
@@ -19,7 +19,7 @@ interface PendingImport {
 }
 
 export default function Settings() {
-  const cloud = useCloudSync()
+  const cloud = useOptionalCloudSync()
   const store = useStore()
   const setProfile = useStore((state) => state.setProfile)
   const setSettings = useStore((state) => state.setSettings)
@@ -46,6 +46,8 @@ export default function Settings() {
     { label: 'Videos', value: data.courses.reduce((sum, c) => sum + c.days.reduce((s, d) => s + d.videos.length, 0), 0) },
     { label: 'Code files', value: data.courses.reduce((sum, c) => sum + c.days.reduce((s, d) => s + d.codeFiles.length, 0), 0) },
     { label: 'Study sessions', value: data.studySessions.length },
+    { label: 'Workouts', value: data.workouts.length },
+    { label: 'Notes', value: data.notes.length },
     { label: 'LeetCode', value: data.leetcode.length },
     { label: 'CP problems', value: data.cp.length },
     { label: 'Contributions', value: data.github.length },
@@ -166,7 +168,7 @@ export default function Settings() {
           </CardBody>
         </Card>
 
-        <Card>
+        {cloud ? <Card>
           <CardHeader title="Cloud sync" description="Your account keeps this data in sync across devices" />
           <CardBody className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
@@ -174,7 +176,7 @@ export default function Settings() {
               <span className="min-w-0 flex-1 truncate">{cloud.email}</span>
               <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                 {cloud.status === 'synced' ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : null}
-                {cloud.status === 'synced' ? 'Synced' : cloud.status === 'saving' ? 'Saving…' : cloud.status === 'loading' ? 'Loading…' : cloud.status === 'offline' ? 'Offline' : 'Sync error'}
+                {cloud.status === 'synced' ? 'Synced' : cloud.status === 'saving' ? 'Saving…' : cloud.status === 'loading' ? 'Loading…' : cloud.status === 'offline' ? 'Offline' : cloud.status === 'migration' ? 'Needs migration' : cloud.status === 'conflict' ? 'Resolve conflict' : 'Sync error'}
               </span>
             </div>
             {cloud.error ? <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{cloud.error}</p> : null}
@@ -184,7 +186,7 @@ export default function Settings() {
               size="sm"
               onClick={() => {
                 setAccountError('')
-                void cloud.signOut().catch((error: unknown) => {
+                void cloud?.signOut().catch((error: unknown) => {
                   setAccountError(error instanceof Error ? error.message : 'Could not sign out.')
                 })
               }}
@@ -192,7 +194,7 @@ export default function Settings() {
               <LogOut className="h-4 w-4" /> Sign out
             </Button>
           </CardBody>
-        </Card>
+        </Card> : null}
       </div>
 
       <Card>

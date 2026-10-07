@@ -23,6 +23,8 @@ describe('import', () => {
     expect(result.data.tasks.length).toBe(data.tasks.length)
     expect(result.data.courses[0].days.length).toBe(data.courses[0].days.length)
     expect(result.data.courses[0].days[0].videos.length).toBe(data.courses[0].days[0].videos.length)
+    expect(result.data.workouts).toEqual(data.workouts)
+    expect(result.data.notes).toEqual(data.notes)
     expect(result.warnings).toHaveLength(0)
   })
 
@@ -103,5 +105,32 @@ describe('merge', () => {
     }
     const merged = mergeData(pickData(current), extra)
     expect(merged.tasks).toHaveLength(current.tasks.length + 1)
+  })
+
+  it('merges new workouts and notes while preserving cloud records with matching ids', () => {
+    const cloud = pickData(buildSeedData())
+    const local = {
+      ...cloud,
+      workouts: [{
+        id: 'workout-local',
+        title: 'Strength',
+        date: '2026-10-06',
+        notes: '',
+        completed: false,
+        exercises: [],
+        createdAt: '2026-10-06T00:00:00.000Z',
+      }],
+      notes: [{
+        id: 'note-local',
+        title: 'Plan',
+        content: 'Study',
+        tags: ['study'],
+        createdAt: '2026-10-06T00:00:00.000Z',
+        updatedAt: '2026-10-06T00:00:00.000Z',
+      }],
+    }
+    const merged = mergeData(cloud, local)
+    expect(merged.workouts.map((workout) => workout.id)).toContain('workout-local')
+    expect(merged.notes.map((note) => note.id)).toContain('note-local')
   })
 })

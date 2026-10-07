@@ -96,6 +96,35 @@ export const searchAll = (state: DataState, query: string): SearchResult[] => {
       })
   })
 
+  state.workouts.forEach((workout) => {
+    if (has(workout.title, workout.notes, workout.date)) {
+      results.push({
+        id: workout.id,
+        type: 'Workout',
+        title: workout.title,
+        subtitle: workout.date,
+        path: '/fitness',
+      })
+    }
+    workout.exercises.forEach((exercise) => {
+      if (has(exercise.name, exercise.notes)) {
+        results.push({
+          id: exercise.id,
+          type: 'Exercise',
+          title: exercise.name,
+          subtitle: workout.title,
+          path: '/fitness',
+        })
+      }
+    })
+  })
+
+  state.notes.forEach((note) => {
+    if (has(note.title, note.content, note.tags)) {
+      results.push({ id: note.id, type: 'Note', title: note.title, subtitle: note.tags.join(', '), path: '/notes' })
+    }
+  })
+
   state.leetcode.forEach((r) => {
     if (has(r.title, r.topics, r.difficulty, r.notes))
       results.push({ id: r.id, type: 'LeetCode', title: r.title, subtitle: r.difficulty, path: '/coding/leetcode' })
@@ -125,6 +154,16 @@ export const searchAll = (state: DataState, query: string): SearchResult[] => {
   state.goals.forEach((g) => {
     if (has(g.title, g.description, g.category))
       results.push({ id: g.id, type: 'Goal', title: g.title, subtitle: g.category, path: '/goals' })
+    g.milestones?.forEach((milestone) => {
+      if (has(milestone.title))
+        results.push({
+          id: milestone.id,
+          type: 'Goal milestone',
+          title: milestone.title,
+          subtitle: g.title,
+          path: '/goals',
+        })
+    })
   })
 
   return results.slice(0, 60)

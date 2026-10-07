@@ -244,6 +244,8 @@ export const buildSeedData = (): DataState => {
     courses: [ml],
     subjects,
     studySessions,
+    workouts: [],
+    notes: [],
     leetcode,
     cp,
     github,

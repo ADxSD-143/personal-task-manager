@@ -246,7 +246,7 @@ describe('learning flow', () => {
     )
 
     await user.click(screen.getByRole('link', { name: /Open course/i }))
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Machine Learning')
+    expect(await screen.findByRole('heading', { name: 'Machine Learning', level: 1 })).toBeInTheDocument()
     expect(await screen.findByText(/Next up/)).toBeInTheDocument()
   })
 
@@ -310,6 +310,42 @@ describe('study log', () => {
     const session = store().studySessions.find((item) => item.notes === 'Indexing')
     expect(session?.minutes).toBe(75)
     expect(screen.getByText('Indexing')).toBeInTheDocument()
+  })
+})
+
+describe('fitness and notes', () => {
+  it('logs a workout with an exercise', async () => {
+    const user = userEvent.setup()
+    await renderAt('/fitness')
+
+    await user.click(screen.getByRole('button', { name: 'Log workout' }))
+    const workoutDialog = screen.getByRole('dialog')
+    await user.type(within(workoutDialog).getByLabelText('Workout'), 'Strength day')
+    await user.click(within(workoutDialog).getByRole('button', { name: 'Add workout' }))
+    expect(screen.getByText('Strength day')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Exercise' }))
+    const exerciseDialog = screen.getByRole('dialog')
+    await user.type(within(exerciseDialog).getByLabelText('Exercise'), 'Squat')
+    await user.clear(within(exerciseDialog).getByLabelText('Sets'))
+    await user.type(within(exerciseDialog).getByLabelText('Sets'), '4')
+    await user.click(within(exerciseDialog).getByRole('button', { name: 'Add exercise' }))
+    expect(screen.getByText('Squat')).toBeInTheDocument()
+    expect(store().workouts[0].exercises[0].sets).toBe(4)
+  })
+
+  it('creates searchable notes', async () => {
+    const user = userEvent.setup()
+    await renderAt('/notes')
+
+    await user.click(screen.getByRole('button', { name: 'New note' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Title'), 'Graph revision')
+    await user.type(within(dialog).getByLabelText('Content'), 'Review BFS and DFS')
+    await user.type(within(dialog).getByLabelText('Tags'), 'study, dsa')
+    await user.click(within(dialog).getByRole('button', { name: 'Create note' }))
+    expect(screen.getByText('Graph revision')).toBeInTheDocument()
+    expect(store().notes[0].tags).toEqual(['study', 'dsa'])
   })
 })
 

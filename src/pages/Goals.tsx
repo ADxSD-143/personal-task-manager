@@ -158,6 +158,9 @@ export default function Goals() {
   const toggleTask = useStore((state) => state.toggleTask)
   const removeGoal = useStore((state) => state.removeGoal)
   const toggleGoalStatus = useStore((state) => state.toggleGoalStatus)
+  const addGoalMilestone = useStore((state) => state.addGoalMilestone)
+  const toggleGoalMilestone = useStore((state) => state.toggleGoalMilestone)
+  const removeGoalMilestone = useStore((state) => state.removeGoalMilestone)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)
@@ -165,6 +168,7 @@ export default function Goals() {
   const [linking, setLinking] = useState<Goal | null>(null)
   const [filter, setFilter] = useState<'all' | 'active' | 'done'>('all')
   const [query, setQuery] = useState('')
+  const [milestoneDrafts, setMilestoneDrafts] = useState<Record<string, string>>({})
 
   const withProgress = goals.map((goal) => ({ goal, progress: goalProgress(goal, tasks) }))
   const activeCount = goals.filter((goal) => goal.status === 'active').length
@@ -299,6 +303,59 @@ export default function Goals() {
                       color={goal.status === 'done' ? '#10b981' : '#6366f1'}
                       label={`${goal.title} progress`}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-slate-700 dark:text-slate-200">Milestones</p>
+                    {(goal.milestones ?? []).map((milestone) => (
+                      <div key={milestone.id} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={milestone.completed}
+                          onChange={() => toggleGoalMilestone(goal.id, milestone.id)}
+                          aria-label={`${milestone.completed ? 'Reopen' : 'Complete'} milestone ${milestone.title}`}
+                        />
+                        <span className={`min-w-0 flex-1 text-xs ${milestone.completed ? 'text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                          {milestone.title}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Delete milestone ${milestone.title}`}
+                          onClick={() => removeGoalMilestone(goal.id, milestone.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-slate-400" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <TextInput
+                        value={milestoneDrafts[goal.id] ?? ''}
+                        onChange={(event) => setMilestoneDrafts((drafts) => ({ ...drafts, [goal.id]: event.target.value }))}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault()
+                            const title = milestoneDrafts[goal.id]?.trim()
+                            if (title) addGoalMilestone(goal.id, title)
+                            setMilestoneDrafts((drafts) => ({ ...drafts, [goal.id]: '' }))
+                          }
+                        }}
+                        placeholder="Add a milestone"
+                        aria-label={`New milestone for ${goal.title}`}
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label={`Add milestone to ${goal.title}`}
+                        disabled={!milestoneDrafts[goal.id]?.trim()}
+                        onClick={() => {
+                          const title = milestoneDrafts[goal.id]?.trim()
+                          if (title) addGoalMilestone(goal.id, title)
+                          setMilestoneDrafts((drafts) => ({ ...drafts, [goal.id]: '' }))
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   {linked.length > 0 ? (

@@ -35,4 +35,13 @@ describe('global search', () => {
   it('is case insensitive', () => {
     expect(searchAll(data(), 'PYTHON').length).toBeGreaterThan(0)
   })
+
+  it('finds fitness records and personal notes', () => {
+    const workoutId = useStore.getState().addWorkout({ title: 'Morning run' })
+    useStore.getState().addWorkoutExercise(workoutId, { name: 'Intervals' })
+    useStore.getState().addNote({ title: 'Run route', content: 'Park loop', tags: ['fitness'] })
+
+    expect(searchAll(data(), 'intervals').some((result) => result.type === 'Exercise')).toBe(true)
+    expect(searchAll(data(), 'park loop').some((result) => result.type === 'Note')).toBe(true)
+  })
 })

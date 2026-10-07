@@ -220,4 +220,24 @@ describe('store — data management', () => {
     expect(Object.keys(parsed.state ?? {})).toEqual(expect.arrayContaining(['tasks', 'habits', 'courses']))
     expect(pickData(s())).not.toHaveProperty('addTask')
   })
+
+  it('persists workouts, exercises, notes and goal milestones as user data', () => {
+    const workoutId = s().addWorkout({ title: 'Strength day' })
+    s().addWorkoutExercise(workoutId, { name: 'Squat', sets: 4, reps: 8, weightKg: 60 })
+    s().updateWorkout(workoutId, { completed: true })
+    const noteId = s().addNote({ title: 'Training plan', content: 'Add weight next week', tags: ['fitness'] })
+    s().updateNote(noteId, { content: 'Add weight next session' })
+    const goalId = s().addGoal({ title: 'Run a 5K' })
+    s().addGoalMilestone(goalId, 'Run 2K without stopping')
+    const milestone = s().goals.find((goal) => goal.id === goalId)?.milestones?.[0]
+    expect(milestone).toBeDefined()
+    if (milestone) s().toggleGoalMilestone(goalId, milestone.id)
+
+    const persisted = pickData(s())
+    expect(persisted.workouts[0].exercises[0].name).toBe('Squat')
+    expect(persisted.workouts[0].completed).toBe(true)
+    expect(persisted.notes[0].content).toBe('Add weight next session')
+    expect(persisted.goals.find((goal) => goal.id === goalId)?.milestones?.[0].completed).toBe(true)
+    expect(JSON.parse(window.localStorage.getItem('personal-os-v1') ?? '{}').state.workouts).toHaveLength(1)
+  })
 })

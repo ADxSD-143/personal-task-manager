@@ -9,12 +9,16 @@ import type {
   Goal,
   Habit,
   LeetCodeRecord,
+  Note,
   Profile,
   Project,
   Settings,
   StudySession,
   Subject,
   Task,
+  Workout,
+  WorkoutExercise,
+  GoalMilestone,
 } from '@/types'
 import { uid } from '@/lib/id'
 import { todayKey } from '@/lib/date'
@@ -42,6 +46,9 @@ export type CPInput = Partial<Omit<CPRecord, 'id' | 'createdAt'>> & { title: str
 export type GitHubInput = Partial<Omit<GitHubContribution, 'id' | 'createdAt'>> & { repo: string }
 export type ProjectInput = Partial<Omit<Project, 'id' | 'createdAt'>> & { name: string }
 export type GoalInput = Partial<Omit<Goal, 'id' | 'createdAt'>> & { title: string }
+export type WorkoutInput = Partial<Omit<Workout, 'id' | 'createdAt'>> & { title: string }
+export type NoteInput = Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>> & { title: string }
+export type WorkoutExerciseInput = Partial<Omit<WorkoutExercise, 'id'>> & { name: string }
 
 export interface AppActions {
   setProfile: (patch: Partial<Profile>) => void
@@ -83,6 +90,16 @@ export interface AppActions {
   updateStudySession: (id: string, patch: Partial<StudySession>) => void
   removeStudySession: (id: string) => void
 
+  addWorkout: (input: WorkoutInput) => string
+  updateWorkout: (id: string, patch: Partial<Workout>) => void
+  removeWorkout: (id: string) => void
+  addWorkoutExercise: (workoutId: string, input: WorkoutExerciseInput) => void
+  updateWorkoutExercise: (workoutId: string, exerciseId: string, patch: Partial<WorkoutExercise>) => void
+  removeWorkoutExercise: (workoutId: string, exerciseId: string) => void
+  addNote: (input: NoteInput) => string
+  updateNote: (id: string, patch: Partial<Note>) => void
+  removeNote: (id: string) => void
+
   addLeetCode: (input: LeetCodeInput) => void
   updateLeetCode: (id: string, patch: Partial<LeetCodeRecord>) => void
   removeLeetCode: (id: string) => void
@@ -103,6 +120,9 @@ export interface AppActions {
   updateGoal: (id: string, patch: Partial<Goal>) => void
   removeGoal: (id: string) => void
   toggleGoalStatus: (id: string) => void
+  addGoalMilestone: (goalId: string, title: string) => void
+  toggleGoalMilestone: (goalId: string, milestoneId: string) => void
+  removeGoalMilestone: (goalId: string, milestoneId: string) => void
 
   importData: (data: DataState, mode: 'replace' | 'merge') => void
   resetAll: () => void
@@ -142,6 +162,8 @@ const emptyData = (): DataState => ({
   courses: [],
   subjects: [],
   studySessions: [],
+  workouts: [],
+  notes: [],
   leetcode: [],
   cp: [],
   github: [],
@@ -389,6 +411,81 @@ export const useStore = create<AppStore>()(
         set((state) => ({ studySessions: replace(state.studySessions, id, patch) })),
       removeStudySession: (id) => set((state) => ({ studySessions: drop(state.studySessions, id) })),
 
+      addWorkout: (input) => {
+        const workout: Workout = {
+          id: uid(),
+          title: input.title,
+          date: input.date ?? todayKey(),
+          notes: input.notes ?? '',
+          completed: input.completed ?? false,
+          exercises: input.exercises ?? [],
+          createdAt: now(),
+        }
+        set((state) => ({ workouts: [workout, ...state.workouts] }))
+        return workout.id
+      },
+      updateWorkout: (id, patch) => set((state) => ({ workouts: replace(state.workouts, id, patch) })),
+      removeWorkout: (id) => set((state) => ({ workouts: drop(state.workouts, id) })),
+      addWorkoutExercise: (workoutId, input) =>
+        set((state) => ({
+          workouts: state.workouts.map((workout) =>
+            workout.id === workoutId
+              ? {
+                  ...workout,
+                  exercises: [
+                    ...workout.exercises,
+                    {
+                      id: uid(),
+                      name: input.name,
+                      sets: input.sets ?? 0,
+                      reps: input.reps ?? 0,
+                      weightKg: input.weightKg ?? null,
+                      durationMinutes: input.durationMinutes ?? null,
+                      notes: input.notes ?? '',
+                    },
+                  ],
+                }
+              : workout
+          ),
+        })),
+      updateWorkoutExercise: (workoutId, exerciseId, patch) =>
+        set((state) => ({
+          workouts: state.workouts.map((workout) =>
+            workout.id === workoutId
+              ? {
+                  ...workout,
+                  exercises: replace(workout.exercises, exerciseId, patch),
+                }
+              : workout
+          ),
+        })),
+      removeWorkoutExercise: (workoutId, exerciseId) =>
+        set((state) => ({
+          workouts: state.workouts.map((workout) =>
+            workout.id === workoutId
+              ? { ...workout, exercises: drop(workout.exercises, exerciseId) }
+              : workout
+          ),
+        })),
+      addNote: (input) => {
+        const timestamp = now()
+        const note: Note = {
+          id: uid(),
+          title: input.title,
+          content: input.content ?? '',
+          tags: input.tags ?? [],
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }
+        set((state) => ({ notes: [note, ...state.notes] }))
+        return note.id
+      },
+      updateNote: (id, patch) =>
+        set((state) => ({
+          notes: replace(state.notes, id, { ...patch, updatedAt: now() }),
+        })),
+      removeNote: (id) => set((state) => ({ notes: drop(state.notes, id) })),
+
       addLeetCode: (input) =>
         set((state) => ({
           leetcode: [
@@ -480,6 +577,7 @@ export const useStore = create<AppStore>()(
           category: input.category ?? 'General',
           targetDate: input.targetDate ?? null,
           status: input.status ?? 'active',
+          milestones: input.milestones ?? [],
           createdAt: now(),
         }
         set((state) => ({ goals: [goal, ...state.goals] }))
@@ -499,6 +597,50 @@ export const useStore = create<AppStore>()(
         set((state) => ({
           goals: state.goals.map((goal) =>
             goal.id === id ? { ...goal, status: goal.status === 'done' ? 'active' : 'done' } : goal
+          ),
+        })),
+      addGoalMilestone: (goalId, title) =>
+        set((state) => ({
+          goals: state.goals.map((goal) =>
+            goal.id === goalId
+              ? {
+                  ...goal,
+                  milestones: [
+                    ...(goal.milestones ?? []),
+                    { id: uid(), title, completed: false, completedAt: null },
+                  ],
+                }
+              : goal
+          ),
+        })),
+      toggleGoalMilestone: (goalId, milestoneId) =>
+        set((state) => ({
+          goals: state.goals.map((goal) =>
+            goal.id === goalId
+              ? {
+                  ...goal,
+                  milestones: (goal.milestones ?? []).map((milestone: GoalMilestone) =>
+                    milestone.id === milestoneId
+                      ? {
+                          ...milestone,
+                          completed: !milestone.completed,
+                          completedAt: milestone.completed ? null : now(),
+                        }
+                      : milestone
+                  ),
+                }
+              : goal
+          ),
+        })),
+      removeGoalMilestone: (goalId, milestoneId) =>
+        set((state) => ({
+          goals: state.goals.map((goal) =>
+            goal.id === goalId
+              ? {
+                  ...goal,
+                  milestones: (goal.milestones ?? []).filter((milestone) => milestone.id !== milestoneId),
+                }
+              : goal
           ),
         })),
 
@@ -526,6 +668,8 @@ export const useStore = create<AppStore>()(
           courses: incoming.courses ?? current.courses,
           subjects: incoming.subjects ?? current.subjects,
           studySessions: incoming.studySessions ?? current.studySessions,
+          workouts: incoming.workouts ?? current.workouts,
+          notes: incoming.notes ?? current.notes,
           leetcode: incoming.leetcode ?? current.leetcode,
           cp: incoming.cp ?? current.cp,
           github: incoming.github ?? current.github,
@@ -536,4 +680,3 @@ export const useStore = create<AppStore>()(
     }
   )
 )
-

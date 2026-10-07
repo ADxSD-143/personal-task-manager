@@ -83,6 +83,42 @@ export interface StudySession {
   createdAt: string
 }
 
+export interface WorkoutExercise {
+  id: ID
+  name: string
+  sets: number
+  reps: number
+  weightKg: number | null
+  durationMinutes: number | null
+  notes: string
+}
+
+export interface Workout {
+  id: ID
+  title: string
+  date: string
+  notes: string
+  completed: boolean
+  exercises: WorkoutExercise[]
+  createdAt: string
+}
+
+export interface Note {
+  id: ID
+  title: string
+  content: string
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GoalMilestone {
+  id: ID
+  title: string
+  completed: boolean
+  completedAt: string | null
+}
+
 export type Difficulty = 'Easy' | 'Medium' | 'Hard'
 export type SolveStatus = 'todo' | 'solved' | 'review'
 
@@ -140,6 +176,7 @@ export interface Goal {
   category: string
   targetDate: string | null
   status: 'active' | 'done'
+  milestones?: GoalMilestone[]
   createdAt: string
 }
 
@@ -161,6 +198,8 @@ export interface DataState {
   courses: Course[]
   subjects: Subject[]
   studySessions: StudySession[]
+  workouts: Workout[]
+  notes: Note[]
   leetcode: LeetCodeRecord[]
   cp: CPRecord[]
   github: GitHubContribution[]
